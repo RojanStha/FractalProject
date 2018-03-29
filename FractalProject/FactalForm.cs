@@ -1,12 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Drawing.Printing;
 
 
 namespace FractalProject
@@ -34,6 +29,140 @@ namespace FractalProject
         //private Image picture;
         private Bitmap picture;
         private Graphics g;
+
+        private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
+        {
+            //e.consume();
+            if (action)
+            {
+                mouseDown = true;
+                xs = e.X;
+                ys = e.Y;
+            }
+        }
+
+        private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (action && mouseDown)
+            {
+                xe = e.X;
+                ye = e.Y;
+                rectangle = true;
+                pictureBox1.Refresh();
+            }
+        }
+
+        private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
+        {
+            int z, w;
+
+            //e.consume();
+            if (action)
+            {
+                xe = e.X;
+                ye = e.Y;
+                if (xs > xe)
+                {
+                    z = xs;
+                    xs = xe;
+                    xe = z;
+                }
+                if (ys > ye)
+                {
+                    z = ys;
+                    ys = ye;
+                    ye = z;
+                }
+                w = (xe - xs);
+                z = (ye - ys);
+                if ((w < 2) && (z < 2)) initvalues();
+                else
+                {
+                    if (((float)w > (float)z * xy)) ye = (int)((float)ys + (float)w / xy);
+                    else xe = (int)((float)xs + (float)z * xy);
+                    xende = xstart + xzoom * (double)xe;
+                    yende = ystart + yzoom * (double)ye;
+                    xstart += xzoom * (double)xs;
+                    ystart += yzoom * (double)ys;
+                }
+                xzoom = (xende - xstart) / (double)x1;
+                yzoom = (yende - ystart) / (double)y1;
+                mandelbrot();
+                rectangle = false;
+                pictureBox1.Refresh();
+                mouseDown = false;
+            }
+        }
+
+        private void closeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Application.Restart();
+        }
+        public void Stop()
+        {
+            pictureBox1.Image = null;
+            pictureBox1.Invalidate();
+        }
+        private void reloadToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Stop();
+            start();
+        }
+
+        private void pictureBox1_Paint(object sender, PaintEventArgs e)
+        {
+            update();
+        }
+        public void update()
+        {
+            Image tempPic = Image.FromHbitmap(picture.GetHbitmap());
+            Graphics g = Graphics.FromImage(tempPic);
+
+            if (rectangle)
+            {
+                Pen pen = new Pen(Color.White);
+
+                Rectangle rect;
+
+                if (xs < xe)
+                {
+                    if (ys < ye)
+                    {
+                        rect = new Rectangle(xs, ys, (xe - xs), (ye - ys));
+                    }
+                    else
+                    {
+                        rect = new Rectangle(xs, ye, (xe - xs), (ys - ye));
+                    }
+                }
+                else
+                {
+                    if (ys < ye)
+                    {
+                        rect = new Rectangle(xe, ys, (xs - xe), (ye - ys));
+                    }
+                    else
+                    {
+                        rect = new Rectangle(xe, ye, (xs - xe), (ys - ye));
+                    }
+                }
+
+                g.DrawRectangle(pen, rect);
+                pictureBox1.Image = tempPic;
+
+            }
+        }
+        private void printDocument1_PrintPage(object sender, System.Drawing.Printing.PrintPageEventArgs e)
+        {
+            e.Graphics.DrawImage(pictureBox1.Image, 0, 0);
+        }
+        private void printToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            PrintDocument p = new PrintDocument();
+            p.PrintPage += new PrintPageEventHandler(printDocument1_PrintPage);
+            p.Print();
+        }
+
         private Graphics g1;
         private Cursor c1, c2;
         private HSB HSBcol;
@@ -90,7 +219,13 @@ namespace FractalProject
         }
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
-
+            SaveFileDialog f = new SaveFileDialog();
+            f.Filter = "JPG(*.JPG) | *.JPG";
+           
+            if (f.ShowDialog() == DialogResult.OK)
+            {
+                picture.Save(f.FileName);
+            }
         }
 
         private void mandelbrot() // calculate all points
