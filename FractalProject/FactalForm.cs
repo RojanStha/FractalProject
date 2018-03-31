@@ -2,7 +2,8 @@
 using System.Drawing;
 using System.Windows.Forms;
 using System.Drawing.Printing;
-
+using System.Xml;
+using System.IO;
 
 namespace FractalProject
 {
@@ -19,6 +20,12 @@ namespace FractalProject
         private static bool action, rectangle, finished;
         private static float xy;
         private bool mouseDown = false;
+       
+        private Graphics g1;
+        private Cursor c1, c2;
+        private HSB HSBcol;
+        private Pen pen;
+        private Rectangle rect;
 
         private void pictureBox2_Click(object sender, EventArgs e)
         {
@@ -163,11 +170,41 @@ namespace FractalProject
             p.Print();
         }
 
-        private Graphics g1;
-        private Cursor c1, c2;
-        private HSB HSBcol;
-        private Pen pen;
-        private Rectangle rect;
+        private void saveAsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                XmlWriter writer = XmlWriter.Create("state.xml");
+                writer.WriteStartDocument();
+                writer.WriteStartElement("states");
+                writer.WriteElementString("xstart", xstart.ToString());
+                writer.WriteElementString("ystart", ystart.ToString());
+                writer.WriteElementString("xzoom", xzoom.ToString());
+                writer.WriteElementString("yzoom", yzoom.ToString());
+                writer.WriteEndElement();
+                writer.WriteEndDocument();
+                writer.Flush();
+                writer.Close();
+                MessageBox.Show("Your State Has been Saved Successfully");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        private void openToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            String exists = "state.xml";
+            if (File.Exists(exists))
+            {
+                File.Delete("state.xml");
+            }
+            pictureBox1.Image = null;
+            start();
+        }
+
+      
 
 
         public FactalForm()
@@ -212,11 +249,37 @@ namespace FractalProject
         {
             action = false;
             rectangle = false;
-            initvalues();
-            xzoom = (xende - xstart) / (double)x1;
-            yzoom = (yende - ystart) / (double)y1;
-            mandelbrot();
+            String exists = "state.xml";
+            if (File.Exists(exists))
+            {
+                try
+                {
+                    XmlDocument state = new XmlDocument();
+                    state.Load("state.xml");
+                    foreach (XmlNode node in state)
+                    {
+                        xstart = Convert.ToDouble(node["xstart"]?.InnerText);
+                        ystart = Convert.ToDouble(node["ystart"]?.InnerText);
+                        xzoom = Convert.ToDouble(node["xzoom"]?.InnerText);
+                        yzoom = Convert.ToDouble(node["yzoom"]?.InnerText);
+                    }
+                    mandelbrot();
+                    Refresh();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+            else
+            {
+                initvalues();
+                xzoom = (xende - xstart) / (double)x1;
+                yzoom = (yende - ystart) / (double)y1;
+                mandelbrot();
+            }
         }
+       
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SaveFileDialog f = new SaveFileDialog();
