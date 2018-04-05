@@ -5,6 +5,7 @@ using System.Drawing.Printing;
 using System.Xml;
 using System.IO;
 
+
 namespace FractalProject
 {
     public partial class FactalForm : Form
@@ -20,12 +21,39 @@ namespace FractalProject
         private static bool action, rectangle, finished;
         private static float xy;
         private bool mouseDown = false;
-       
+        private int colorCycle;
         private Graphics g1;
         private Cursor c1, c2;
         private HSB HSBcol;
         private Pen pen;
         private Rectangle rect;
+        private int colourCode = 0;
+        private bool cycleForward = true;
+        private char ColorPalate;
+        private char newcolor;
+
+
+        private void ColourCycle_Tick(object sender, EventArgs e)
+        {
+            mandelbrot();
+            Refresh();
+            if (colourCode == 0)
+            {
+                cycleForward = false;
+            }
+            if (colourCode == -250)
+            {
+                cycleForward = true;
+            }
+            if (cycleForward)
+            {
+                colourCode++;
+            }
+            else
+            {
+                colourCode--;
+            }
+        }
 
         private void pictureBox2_Click(object sender, EventArgs e)
         {
@@ -36,6 +64,8 @@ namespace FractalProject
         //private Image picture;
         private Bitmap picture;
         private Graphics g;
+
+
 
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
@@ -114,6 +144,51 @@ namespace FractalProject
         {
             Stop();
             start();
+        }
+        
+            private void startToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            timer1.Interval = 1;
+            timer1.Start();
+        }
+
+        private void offToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            timer1.Stop();
+        }
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            if (colorCycle == 4)
+            {
+
+                colorCycle = 0;
+                HSBcol.colorCycling(colorCycle);
+                mandelbrot();
+                //start();
+            }
+
+            else
+            {
+                colorCycle = colorCycle + 1;
+                HSBcol.colorCycling(colorCycle);
+                mandelbrot();
+                //start();
+
+            }
+
+            action = false; mouseDown = false; rectangle = false;
+        }
+
+        private void colorPalletToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void redToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ColorPalate = 'R';
+            HSBcol.Color('R');
+            mandelbrot();
         }
 
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
@@ -210,29 +285,21 @@ namespace FractalProject
         public FactalForm()
         {
             InitializeComponent(); HSBcol = new HSB();
-            //setSize(640, 480);
+        
             this.pictureBox1.Size = new System.Drawing.Size(640, 480); // equivalent of setSize in java code
             finished = false;
-            //addMouseListener(this);
-            //addMouseMotionListener(this);
-            //c1 = new Cursor(Cursor.WAIT_CURSOR);
-            //c2 = new Cursor(Cursor.CROSSHAIR_CURSOR);
             c1 = Cursors.WaitCursor;
             c2 = Cursors.Cross;
-            //x1 = getsize().width;
-            //y1 = getsize().height;
             x1 = pictureBox1.Width;
             y1 = pictureBox1.Height;
             xy = (float)x1 / (float)y1;
-            //picture = createImage(x1, y1);
             picture = new Bitmap(pictureBox1.Width, pictureBox1.Height);
-            //g1 = picture.getGraphics();
             g1 = Graphics.FromImage(picture);
             finished = true;
-            //editToolStripMenuItem.Enabled = false;
+            
             start();
         }
-        private void initvalues() // reset start values
+        private void initvalues() 
         {
             xstart = SX;
             ystart = SY;
@@ -245,6 +312,8 @@ namespace FractalProject
         {
 
         }
+
+
         public void start()
         {
             action = false;
@@ -354,10 +423,36 @@ namespace FractalProject
 
     class HSB
     {
+        public bool color = false;
+        public Char colorValue;
+        public float newValue;
+        public double cvalue = 255.0f;
         public float rChan, gChan, bChan;
         public HSB()
         {
             rChan = gChan = bChan = 0;
+        }
+        public void Color(Char colorValue)
+        {
+            this.colorValue = colorValue;
+            color = true;
+
+        }
+        public void colorCycling(int i)
+        {
+            char[] colors = { 'R', 'B', 'G', 'P', 'D' };
+
+
+            this.colorValue = colors[i];
+
+        }
+        public void cycle(double i)
+        {
+
+            if (i < 256.0f)
+            {
+                this.cvalue = i;
+            }
         }
         public void fromHSB(float h, float s, float b)
         {
@@ -375,9 +470,37 @@ namespace FractalProject
                 switch ((int)h)
                 {
                     case 0:
-                        rChan = (int)(b * 255.0f + 0.5f);
-                        gChan = (int)(t * 255.0f + 0.5f);
-                        bChan = (int)(p * 255.0f + 0.5f);
+                        if (colorValue.Equals('B'))
+                        {
+                            rChan = (int)(p * 255.0f + 0.5f);
+                            gChan = (int)(t * 255.0f + 0.5f);
+                            bChan = (int)(b * 255.0f + 0.5f);
+                        }
+                        else if (colorValue.Equals('G'))
+                        {
+                            rChan = (int)(p * 255.0f + 0.5f);
+                            gChan = (int)(b * 255.0f + 0.5f);
+                            bChan = (int)(t * 255.0f + 0.5f);
+                        }
+                        else if (colorValue.Equals('P'))
+                        {
+                            rChan = (int)(b * 255.0f + 0.5f);
+                            gChan = (int)(t * 255.0f + 0.5f);
+                            bChan = (int)(b * 255.0f + 0.5f);
+                        }
+                        else if (colorValue.Equals('D'))
+                        {
+                            rChan = (int)(b * 0.0f + 0.5f);
+                            gChan = (int)(t * 0.0f + 0.5f);
+                            bChan = (int)(p * 0.0f + 0.5f);
+                        }
+                        else
+                        {
+                            rChan = (int)(b * 255.0f + 0.5f);
+                            gChan = (int)(t * 255.0f + 0.5f);
+                            bChan = (int)(p * 255.0f + 0.5f);
+                        }
+
                         break;
                     case 1:
                         rChan = (int)(q * 255.0f + 0.5f);
