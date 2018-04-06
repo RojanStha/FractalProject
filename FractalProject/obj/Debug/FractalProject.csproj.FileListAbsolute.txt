@@ -8,3 +8,4 @@ E:\FractalProject\FractalProject\FractalProject\obj\Debug\FractalProject.csproj.
 E:\FractalProject\FractalProject\FractalProject\obj\Debug\FractalProject.csproj.CoreCompileInputs.cache
 E:\FractalProject\FractalProject\FractalProject\obj\Debug\FractalProject.exe
 E:\FractalProject\FractalProject\FractalProject\obj\Debug\FractalProject.pdb
+E:\FractalProject\FractalProject\FractalProject\obj\Debug\FractalProject.About.resources

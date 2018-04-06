@@ -245,6 +245,14 @@ namespace FractalProject
             action = false; mouseDown = false; rectangle = false;
         }
 
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            
+            About ab = new About();
+            ab.ShowDialog();
+
+        }
+
         private void loadstateToolStripMenuItem_Click(object sender, EventArgs e)
         {
             savestate = true;
