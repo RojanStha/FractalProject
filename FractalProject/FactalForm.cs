@@ -1,10 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
 using System.Drawing;
+using System.Drawing.Imaging;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Drawing.Printing;
-using System.Xml;
 using System.IO;
-
+using System.Xml;
 
 namespace FractalProject
 {
@@ -27,10 +32,19 @@ namespace FractalProject
         private HSB HSBcol;
         private Pen pen;
         private Rectangle rect;
+        private bool savestate = false;
         private int colourCode = 0;
         private bool cycleForward = true;
         private char ColorPalate;
+        private char color;
         private char newcolor;
+
+
+    
+        //private Image picture;
+        private Bitmap picture;
+        private Graphics g;
+
 
 
         private void ColourCycle_Tick(object sender, EventArgs e)
@@ -54,18 +68,6 @@ namespace FractalProject
                 colourCode--;
             }
         }
-
-        private void pictureBox2_Click(object sender, EventArgs e)
-        {
-
-        }
-
-
-        //private Image picture;
-        private Bitmap picture;
-        private Graphics g;
-
-
 
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
@@ -140,21 +142,17 @@ namespace FractalProject
             pictureBox1.Image = null;
             pictureBox1.Invalidate();
         }
-        private void reloadToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            Stop();
-            start();
-        }
-        
+     
             private void startToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            timer1.Interval = 1;
-            timer1.Start();
+            timer2.Interval = 1;
+            timer2.Start();
         }
 
         private void offToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            timer1.Stop();
+            timer2.Stop();
+            action = true;
         }
         private void timer1_Tick(object sender, EventArgs e)
         {
@@ -175,6 +173,7 @@ namespace FractalProject
                 //start();
 
             }
+            
 
             action = false; mouseDown = false; rectangle = false;
         }
@@ -190,6 +189,104 @@ namespace FractalProject
             HSBcol.Color('R');
             mandelbrot();
         }
+
+        private void blueToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ColorPalate = 'B';
+            HSBcol.Color('B');
+            mandelbrot();
+        }
+
+        private void greenToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ColorPalate = 'G';
+            HSBcol.Color('G');
+            mandelbrot();
+        }
+
+        private void blackToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ColorPalate = 'D';
+            HSBcol.Color('D');
+            mandelbrot();
+        }
+
+        private void pinklToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ColorPalate = 'P';
+            HSBcol.Color('P');
+            mandelbrot();
+        }
+
+        private void timer2_Tick(object sender, EventArgs e)
+        {
+            if (colorCycle == 4)
+            {
+
+                colorCycle = 0;
+                HSBcol.colorCycling(colorCycle);
+                mandelbrot();
+                //start();
+            }
+
+            else
+            {
+                colorCycle = colorCycle + 1;
+                HSBcol.colorCycling(colorCycle);
+                mandelbrot();
+                //start();
+
+            }
+            char[] colors = { 'R', 'B', 'G', 'P', 'D' };
+
+
+            this.ColorPalate = colors[colorCycle];
+
+            action = false; mouseDown = false; rectangle = false;
+        }
+
+        private void loadstateToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            savestate = true;
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "XML(*.xml) | *.xml";
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                LoadState();
+            }
+        }
+
+        public void LoadState() //loads the mandelbrot image from the byte file
+        {
+            pictureBox1.Image = null;
+            String exists = "state.xml";
+            if (File.Exists(exists))
+            {
+                try
+                {
+                    XmlDocument state = new XmlDocument();
+                    state.Load("state.xml");
+                    foreach (XmlNode node in state)
+                    {
+                        xstart = Convert.ToDouble(node["xstart"]?.InnerText);
+                        ystart = Convert.ToDouble(node["ystart"]?.InnerText);
+                        xzoom = Convert.ToDouble(node["xzoom"]?.InnerText);
+                        yzoom = Convert.ToDouble(node["yzoom"]?.InnerText);
+                    }
+                    mandelbrot();
+                    Refresh();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+            else
+            {
+                MessageBox.Show("No previously saved state found!");
+            }
+        }
+
 
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
         {
@@ -234,51 +331,21 @@ namespace FractalProject
 
             }
         }
-        private void printDocument1_PrintPage(object sender, System.Drawing.Printing.PrintPageEventArgs e)
-        {
-            e.Graphics.DrawImage(pictureBox1.Image, 0, 0);
-        }
-        private void printToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            PrintDocument p = new PrintDocument();
-            p.PrintPage += new PrintPageEventHandler(printDocument1_PrintPage);
-            p.Print();
-        }
+     
 
         private void saveAsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            try
+            savestate = true;
+            SaveState();
+            SaveFileDialog sfd = new SaveFileDialog();
+            sfd.Filter = "XML(*.xml) | *.xml";
+            if (sfd.ShowDialog() == DialogResult.OK)
             {
-                XmlWriter writer = XmlWriter.Create("state.xml");
-                writer.WriteStartDocument();
-                writer.WriteStartElement("states");
-                writer.WriteElementString("xstart", xstart.ToString());
-                writer.WriteElementString("ystart", ystart.ToString());
-                writer.WriteElementString("xzoom", xzoom.ToString());
-                writer.WriteElementString("yzoom", yzoom.ToString());
-                writer.WriteEndElement();
-                writer.WriteEndDocument();
-                writer.Flush();
-                writer.Close();
-                MessageBox.Show("Your State Has been Saved Successfully");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
+                picture.Save(sfd.FileName);
             }
         }
 
-        private void openToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            String exists = "state.xml";
-            if (File.Exists(exists))
-            {
-                File.Delete("state.xml");
-            }
-            pictureBox1.Image = null;
-            start();
-        }
-
+        
       
 
 
@@ -288,7 +355,7 @@ namespace FractalProject
         
             this.pictureBox1.Size = new System.Drawing.Size(640, 480); // equivalent of setSize in java code
             finished = false;
-            c1 = Cursors.WaitCursor;
+            //c1 = Cursors.WaitCursor;
             c2 = Cursors.Cross;
             x1 = pictureBox1.Width;
             y1 = pictureBox1.Height;
@@ -318,35 +385,11 @@ namespace FractalProject
         {
             action = false;
             rectangle = false;
-            String exists = "state.xml";
-            if (File.Exists(exists))
-            {
-                try
-                {
-                    XmlDocument state = new XmlDocument();
-                    state.Load("state.xml");
-                    foreach (XmlNode node in state)
-                    {
-                        xstart = Convert.ToDouble(node["xstart"]?.InnerText);
-                        ystart = Convert.ToDouble(node["ystart"]?.InnerText);
-                        xzoom = Convert.ToDouble(node["xzoom"]?.InnerText);
-                        yzoom = Convert.ToDouble(node["yzoom"]?.InnerText);
-                    }
-                    mandelbrot();
-                    Refresh();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                }
-            }
-            else
-            {
-                initvalues();
-                xzoom = (xende - xstart) / (double)x1;
-                yzoom = (yende - ystart) / (double)y1;
-                mandelbrot();
-            }
+            initvalues();
+            xzoom = (xende - xstart) / (double)x1;
+            yzoom = (yende - ystart) / (double)y1;
+            mandelbrot();
+        
         }
        
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
@@ -357,6 +400,29 @@ namespace FractalProject
             if (f.ShowDialog() == DialogResult.OK)
             {
                 picture.Save(f.FileName);
+            }
+        }
+
+        public void SaveState() //saves the state of mandelbrot image in byte format
+        {
+            try
+            {
+                XmlWriter xw = XmlWriter.Create("State.xml");
+                xw.WriteStartDocument();
+                xw.WriteStartElement("states");
+                
+                xw.WriteElementString("xstart", xstart.ToString());
+                xw.WriteElementString("ystart", ystart.ToString());
+                xw.WriteElementString("xzoom", xzoom.ToString());
+                xw.WriteElementString("yzoom", yzoom.ToString());
+                xw.WriteEndElement();
+                xw.WriteEndDocument();
+                xw.Flush();
+                xw.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
             }
         }
 
@@ -394,7 +460,7 @@ namespace FractalProject
                     g1.DrawLine(pen, new Point(x, y), new Point(x + 1, y)); // drawing pixel
                 }
                 //showStatus("Mandelbrot-Set ready - please select zoom area with pressed mouse.");
-                Cursor.Current = c1;
+                Cursor.Current = c2;
                 action = true;
             }
 
@@ -446,14 +512,7 @@ namespace FractalProject
             this.colorValue = colors[i];
 
         }
-        public void cycle(double i)
-        {
-
-            if (i < 256.0f)
-            {
-                this.cvalue = i;
-            }
-        }
+        
         public void fromHSB(float h, float s, float b)
         {
             if (s == 0)
